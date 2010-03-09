@@ -29,7 +29,7 @@
 * Global Variables
 *********************************************************************************/
 walls direction_of_travel; //This keeps track of the direction that the bot is travelling
-directions turret_angle = dWest;
+directions turret_angle = dSouth;
 directions base_angle = dNorth;
 directions dir_lookup[] =
       {0,dWest,dNorth,0,dEast,0,0,0,dSouth};
@@ -175,7 +175,7 @@ int get_sonar()
 }
 
 void align_turret(){
-    look_left(100+ 2 * DURATION_LOOK_90);
+    set_turret_angle(dWest);
 
 }
 
