@@ -9,6 +9,14 @@ typedef enum {
   south = 8   // 1000
 } walls;
 
+typedef enum{
+    dWest = 0,
+    dNorth = 90,
+    dEast = 180,
+    dSouth = 270
+
+}directions;
+
 typedef struct{
 
   int x;
