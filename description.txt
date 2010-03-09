@@ -1,0 +1,21 @@
+An autonomous maze-solving robot of presidential quality
+
+Authors:
+ * Greg Nehus
+ * Matt Odille
+
+
+Overview:
+ * Developed on a Lego Mindstorms NXT robot running ROBOTC firmware.
+ * Completed in fulfillment of an assignment for the _Programming and System Design Using a Mobile Robot_ course at the University of Pittsburgh
+
+
+Assumptions:
+ * Grid-style maze with all 90-degree turns
+ * Islands may be present
+ * No knowledge of maze walls prior to execution
+ * Given (x,y) coordinates of destination cell in advance
+
+
+Goal:
+ * Find a path to the destination cell, then travel back and forth between the destination and starting point as many times as possible in a specified time span
