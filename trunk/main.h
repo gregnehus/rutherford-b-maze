@@ -1,10 +1,4 @@
-#pragma config(Sensor, S1,     touchSensor,         sensorTouch)
-#pragma config(Sensor, S4,     sonarSensor,         sensorSONAR)
-#pragma config(Motor,  motorA,          rightMotor,    tmotorNormal, PIDControl, encoder)
-#pragma config(Motor,  motorB,          turretMotor,    tmotorNormal, PIDControl, encoder)
-#pragma config(Motor,  motorC,          leftMotor,     tmotorNormal, PIDControl, encoder)
-#define MAZE_HEIGHT 5
-#define MAZE_WIDTH 6
+
 
 
 
@@ -15,9 +9,18 @@ typedef enum {
   south = 8   // 1000
 } walls;
 
+typedef struct{
+
+  int x;
+  int y;
+}coord;
+
+
+
+
 typedef struct {
   walls cell_walls;
-  char visited;
+  bool visited;
 } cell;
 
 typedef struct{
@@ -27,5 +30,21 @@ typedef struct{
   int angle;
 } position;
 
+
+
 position curr_position;
 cell maze[MAZE_WIDTH][MAZE_HEIGHT];
+
+void halt();
+void turn_left(int duration);
+void turn_right(int duration);
+void look_left(int duration);
+void look_right(int duration);
+void dash(int duration);
+int get_sonar();
+void print_sonar();
+void scan_cell();
+void align_turret();
+void get_neighbor_coordinate(int x, int y, walls dir, coord *n);
+float get_distance(int x1, int y1, int x2, int y2);
+walls choose_best_cell();
