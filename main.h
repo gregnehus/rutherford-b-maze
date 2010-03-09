@@ -55,6 +55,6 @@ int get_sonar();
 void scan_cell();
 void scan_wall(walls w);
 void align_turret();
-void get_neighbor_coordinate(int x, int y, walls dir, coord *n);
+bool get_neighbor_coordinate(int x, int y, walls dir, coord *n);
 float get_distance(int x1, int y1, int x2, int y2);
 walls choose_best_cell();
