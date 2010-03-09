@@ -29,7 +29,9 @@
 * Global Variables
 *********************************************************************************/
 walls direction_of_travel; //This keeps track of the direction that the bot is travelling
-int turret_angle = 0;
+directions turret_angle = dWest;
+directions base_angle = dNorth;
+
 
 
 task main()
@@ -99,24 +101,43 @@ void halt()
     return;
 }
 
-void set_turret_angle(int angle){
+void set_base_angle(int angle){
     if (angle == turret_angle) return;
     angle = angle - turret_angle;
     turret_angle = angle;
-    turn(abs(angle), angle/(abs(angle)));
+    turn_base(abs(angle), angle/(abs(angle)));
 
     
 
 }
 
-void turn(int angle, int direction)
+
+void set_turret_angle(int angle){
+    if (angle == turret_angle) return;
+    angle = angle - turret_angle;
+    turret_angle = angle;
+    turn_turret(abs(angle), angle/(abs(angle)));
+
+
+
+}
+
+void turn_turret(int angle, int direction)
 {
-    int extra = 0;
-    if (turret_angle == 0 || turret_angle == 270) extra = 100;
+    halt();
+    motor[turretMotor] = 25 * direction;
+    wait1Msec(DURATION_LOOK_90 * (angle / 90));
+    halt();
+    return;
+}
+
+void turn_base(int angle, int direction)
+{
+    
     halt();
     motor[rightMotor] = 50 * (direction * -1);
     motor[leftMotor] = 50 * direction;
-    wait1Msec(DURATION_TURN_90 * (angle / 90) + extra);
+    wait1Msec(DURATION_TURN_90 * (angle / 90));
     halt();
     return;
 }
