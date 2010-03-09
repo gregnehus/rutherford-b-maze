@@ -9,6 +9,8 @@ typedef enum {
   south = 8   // 1000
 } walls;
 
+
+
 typedef enum{
     dWest = 0,
     dNorth = 90,
@@ -41,17 +43,17 @@ typedef struct{
 
 
 position curr_position;
-cell maze[MAZE_WIDTH][MAZE_HEIGHT];
+
 
 void halt();
-void turn_left(int duration);
-void turn_right(int duration);
-void look_left(int duration);
-void look_right(int duration);
+void set_turret_angle(directions d_angle);
+void set_base_angle(directions d_angle);
+void turn_base(int angle, int direction);
+void turn_turret(int angle, int direction);
 void dash(int duration);
 int get_sonar();
-void print_sonar();
 void scan_cell();
+void scan_wall(walls w);
 void align_turret();
 void get_neighbor_coordinate(int x, int y, walls dir, coord *n);
 float get_distance(int x1, int y1, int x2, int y2);
