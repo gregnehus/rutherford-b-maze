@@ -57,25 +57,9 @@ task main()
     while(true){
         maze[curr_position.x][curr_position.y].visited = true;
         scan_cell();
-        direction_of_travel = choose_best_cell();        
+        direction_of_travel = choose_best_cell();
 
-        if (direction_of_travel == west){
-            turn_left(DURATION_TURN_90);
-            dash(DURATION_DASH_CELL);
-            turn_right(DURATION_TURN_90);
-
-            }else if(direction_of_travel == east){
-            turn_right(DURATION_TURN_90);
-            dash(DURATION_DASH_CELL);
-            turn_left(DURATION_TURN_90);
-
-            }else if(direction_of_travel == south){
-            turn_right(2 * DURATION_TURN_90);
-            dash(DURATION_DASH_CELL);
-            turn_left(2 * DURATION_TURN_90);
-            }else{
-            dash(DURATION_DASH_CELL);
-        }
+        set_base_angle(dNorth);
 
 
 
@@ -106,13 +90,13 @@ void halt()
 }
 
 void set_base_angle(directions d_angle){
-    if (d_angle == turret_angle) return;
+    if (d_angle == base_angle) return;
     int angle = (int) d_angle;
-    angle = angle - turret_angle;
+    angle = angle - base_angle;
     base_angle = (directions)angle;
     turn_base(abs(angle), angle/(abs(angle)));
 
-    
+
 
 }
 
@@ -132,7 +116,7 @@ void turn_turret(int angle, int direction)
 {
     halt();
     int fineTune = 0;
-    if (angle = 0 || angle = 270) fineTune = 100;
+    if (angle == 0 || angle == 270) fineTune = 100;
     motor[turretMotor] = 25 * direction;
     wait1Msec(DURATION_LOOK_90 * (angle / 90) + fineTune);
     halt();
@@ -141,7 +125,7 @@ void turn_turret(int angle, int direction)
 
 void turn_base(int angle, int direction)
 {
-    
+
     halt();
     motor[rightMotor] = 50 * (direction * -1);
     motor[leftMotor] = 50 * direction;
@@ -167,7 +151,7 @@ int get_sonar()
     int sonar = SensorValue(sonarSensor);
     /*
     nxtDisplayCenteredTextLine(0, "Sonar Reading");
-    nxtDisplayCenteredBigTextLine(2, "%d", sonar);  
+    nxtDisplayCenteredBigTextLine(2, "%d", sonar);
     */
     return sonar; // Store Sonar Sensor values in 'sonarValue' variable.
 
@@ -189,7 +173,7 @@ void scan_wall(walls w){
             maze[curr_position.x][curr_position.y].cell_walls |= w;
             if (get_neighbor_coordinate(curr_position.x, curr_position.y, w, n))
                 maze[n.x][n.y].cell_walls |= (walls) opp_wall_lookup[(int) w];
-                   
+
      }
 
 }
@@ -199,7 +183,7 @@ void scan_cell()
     scan_wall(south);
     scan_wall(east);
     scan_wall(north);
-    
+
     return;
 }
 
@@ -217,7 +201,7 @@ walls choose_best_cell()
     for (x = 0; x<4; x++){
         if (mask & ~wallie){
             coord n;
-            
+
             if (!get_neighbor_coordinate(curr_position.x, curr_position.y, (walls)mask, n)) continue;
 
             if (get_distance(curr_position.x, curr_position.y, n.x, n.y) < shortestUnvisitedDistance && !maze[n.x][n.y].visited){
@@ -251,7 +235,7 @@ walls choose_best_cell()
         return vdir;
 
     }
-    
+
     PlaySound(soundBlip);
 
     curr_position.x = bX;
@@ -280,7 +264,7 @@ bool get_neighbor_coordinate(int x, int y, walls dir, coord *n){
         n->x = x;
         n->y = y -1;
     }
-        if (n.x < 0 || n.y < 0 || n.x >= MAZE_WIDTH  || n.y >= MAZE_HEIGHT) return false;
+        if (n->x < 0 || n->y < 0 || n->x >= MAZE_WIDTH  || n->y >= MAZE_HEIGHT) return false;
         return true;
 
 
