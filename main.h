@@ -60,3 +60,5 @@ bool get_neighbor_coordinate(int x, int y, walls dir, coord *n);
 float get_distance(int x1, int y1, int x2, int y2);
 walls choose_best_cell();
 void get_cell_pixel_origin(int x, int y, coord *n);
+void get_cell_pixel_center(int x, int y, coord *n);
+void draw_cell_wall(int x, int y, walls dir);
