@@ -157,6 +157,38 @@ void display_map(){
     
 
 }
+void draw_cell(int x, int y){
+    coord origin;
+    get_cell_pixel_origin(x, y, origin);
+    if (maze[x][y].cell_walls & west) draw_cell_wall(x,y,west);
+    if (maze[x][y].cell_walls & north) draw_cell_wall(x,y,north);
+    if (maze[x][y].cell_walls & east) draw_cell_wall(x,y,east);
+    if (maze[x][y].cell_walls & south) draw_cell_wall(x,y,south);
+
+
+}
+
+void draw_cell_wall(int x, int y, walls dir){
+    int width, height;
+    if (dir == north || dir == south){
+        width = CELL_PIXEL_WIDTH;
+        height = CELL_WALL_PIXEL_WIDTH;
+        if (dir == north) y = y + CELL_PIXEL_HEIGHT;
+    }else{
+        width = CELL_WALL_PIXEL_WIDTH;
+        height = CELL_PIXEL_HEIGHT;
+        if (dir == west) x = x - CELL_PIXEL_WIDTH;
+
+    }
+
+    int xD, yD;
+    for (xD = x; xD > x - width; x--){
+        for (yD = y; yD < y + height; y++)
+            nxtSetPixel(xD, yD);
+
+    }
+
+}
 
 /********************************************************************************
  * Function: get_cell_pixel_origin
@@ -177,8 +209,8 @@ void get_cell_pixel_origin(int x, int y, coord *n){
  * Description: Determins the pixel center of a given cell
  */
 void get_cell_pixel_center(int x, int y, coord *n){
-    n->x = CELL_PIXEL_WIDTH  * x;
-    n->y = CELL_PIXEL_HEIGHT * y;
+    n->x = CELL_PIXEL_WIDTH  * x - CELL_PIXEL_WIDTH /2;
+    n->y = CELL_PIXEL_HEIGHT * y + CELL_PIXEL_HEIGHT /2;
 
 }
 
