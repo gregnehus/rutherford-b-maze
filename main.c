@@ -17,6 +17,7 @@
 #define MAZE_ORIGIN_Y 0
 #define MAZE_GOAL_X 4
 #define MAZE_GOAL_Y 4
+#define WALL_DISTANCE_THRESHOLD 60
 
 // LCD Information
 #define PIXELS_X 100
@@ -78,17 +79,44 @@ task monitor_bumper(){
 }
 task main()
 {
+	  //
+	  // These variables are declared as RAM values. This will allow you, in the RobotC
+	  // interactive real-time debugger to change them and watch the effect on the motor.
+	  //
+	  int nMoveSize     = 360;    // One full rotation
+	  int nSpeed        = 50;
 
+	  //
+	  // Setup the motor configuration
+	  //
+	  bFloatDuringInactiveMotorPWM = false;
+	  nMotorEncoder[motorA]       = 0;
+	  nMotorEncoderTarget[motorA] = 0;
+
+		//
+		// Enable synchronization between two motors.
+		//     -- motor A will be the 'primary' motor
+		//     -- motor C will be the slave motor
+		//     -- Turn ratio +100% -- same direction and same speed as primary
+		//                      0  -- stopped
+		//                   -100% -- reversed direct and same speed as primary
+		//
+		nNxtSyncedMotors            = synchAC;  // "C" will be synchronized to "A".
+		nNxtSyncedTurnRatio         = 100; // C has same speed as A, and same direction
+		nNxtPidUpdateInterval       = 5;   // Best performance if we do really frequent updates
+		                                   // (i.e. calculation) on the motor speeds to correct
+		                                   // for errors.
+
+    // Set the start coordinates and align the turret
     curr_position.x = MAZE_ORIGIN_X;
     curr_position.y = MAZE_ORIGIN_Y;
     align_turret();
 
+
+    // Initialize the LCD display
     eraseDisplay();
     nxtDisplayStringAt(0, 10, "Hello my name is:");
     nxtDisplayStringAt(0, 15, "Rutherford B Maze");
-
-
-
 
 
     // This loops until the bot solves the maze
@@ -114,6 +142,14 @@ task main()
         }
     }//end while
 
+		//PlaySoundFile("NeedToCreateACoolRSOFile.rso");
+		//while(bSoundActive) wait1Msec(1); // Wait while the sound plays.
+
+    // This loops through travelling back and forth between start and destination coordinates
+    while(true){
+      // TODO: work on me
+      break;
+    }
 
 }//end main
 
@@ -129,20 +165,20 @@ void initialize_maze(){
     for (x = 0; x< MAZE_WIDTH; x++){
         for (y = 0; x< MAZE_HEIGHT; y++){
             walls c = 0;
-            
+
             if (x == 0) c |= west;
             if (x == MAZE_WIDTH - 1) c |= east;
             if (y == 0) c |= south;
             if (y == MAZE_HEIGHT -1) c |= north;
-            
+
             maze[x][y].cell_walls = c;
-            
+
         }
-        
-        
+
+
     }
-    
-    
+
+
 }
 
 /********************************************************************************
@@ -153,8 +189,8 @@ void initialize_maze(){
  */
 
 void display_map(){
-    
-    
+
+
 
 }
 void draw_cell(int x, int y){
@@ -224,7 +260,7 @@ void get_cell_pixel_center(int x, int y, coord *n){
 void halt()
 {
     motor[rightMotor] = 0;
-    motor[leftMotor] = 0;
+    //motor[leftMotor] = 0; // motors are synced :)
     motor[turretMotor] = 0;
     wait1Msec(250);
     return;
@@ -265,9 +301,9 @@ void set_turret_angle(directions angle){
     directions r_angle;
 
     if (angle == turret_angle) return;                          // If requested angle is already set, just leave
-    
+
     r_angle = (directions) ((int)angle - (int)turret_angle);    // Adjust the angle relative to where the turret is currently aimed
-    
+
     turn_turret(abs(r_angle), r_angle/(abs(r_angle)));                // Turn the turret
 
     turret_angle = angle;  // Update the angle at which the base is aimed
@@ -302,11 +338,12 @@ void turn_base(int angle, int direction)
 {
 
     halt();                                                 // Stop all motors
+    nNxtSyncedTurnRatio = -100;                             // leftMotor has same speed as rightMotor, but opposite direction
     motor[rightMotor] = 50 * (direction * -1);              // Set right motor speed
-    motor[leftMotor] = 50 * direction;                      // Set left motor speed
+    //motor[leftMotor] = 50 * direction;                      // synced to rightMotor master
     wait1Msec(DURATION_TURN_90 * (angle / 90));             // Set delay
     halt();                                                 // Stop all motors
-
+    nNxtSyncedTurnRatio = 100;                              // reset the SyncedTurnRatio so both motors have same speed and direction
 }
 
 
@@ -325,7 +362,7 @@ void dash()
 
     halt();                                             // Stop all motors
     motor[rightMotor] = 50;                             // Set right motor speed
-    motor[leftMotor] = 50;                              // Set left motor speed
+    //motor[leftMotor] = 50; // synched to rightMotor master
 
     StartTask(monitor_bumper);                          // Begin process which monitors bumper status
 
@@ -338,7 +375,7 @@ void dash()
 
     if (hasBumped){                                          // If a bump occurred
         motor[rightMotor] = -50;                             // Back the truck up
-        motor[leftMotor] = -50;
+        //motor[leftMotor] = -50;
 
         wait1Msec(splitDuration);                               // Just long enough to center
         halt();                                                 // Stop motors
@@ -355,14 +392,21 @@ void dash()
  */
 int get_sonar()
 {
-    int sonar = SensorValue(sonarSensor);
+    int attempts = 1;
+    int sonar = SensorValue(sonarSensor); // Store Sonar Sensor values in 'sonarValue' variable.
+
     /*
     nxtDisplayCenteredTextLine(0, "Sonar Reading");
     nxtDisplayCenteredBigTextLine(2, "%d", sonar);
     */
-    return sonar; // Store Sonar Sensor values in 'sonarValue' variable.
 
+    while(sonar > 250 && attempts < 3) // Read the sonar up to 3 times if the readings are all maxed out
+    {
+      sonar = SensorValue(sonarSensor);
+      attempts = attempts + 1;
+    }
 
+    return sonar;
 }
 
 /********************************************************************************
@@ -392,8 +436,8 @@ void scan_wall(walls w){
 
     set_turret_angle(dir_lookup[(int) w]); //Turn to the particular wall
 
-    // If there is an object that has a distance of less than 60 mms
-    if (get_sonar() < 60){
+    // If there is an object that has a distance less than the WALL_DISTANCE_THRESHOLD value
+    if (get_sonar() < WALL_DISTANCE_THRESHOLD){
             maze[curr_position.x][curr_position.y].cell_walls |= w;             // Mark this as a wall
 
             // If there is a neighboring cell
@@ -415,7 +459,7 @@ void scan_cell()
     int x;
     for (x = 1; x < 9; x = x * 2)                   // This for loop will iterate through wall_lookup array
         scan_wall(wall_lookup[x]);                  // which has all of the wall types in it
-      
+
 }
 
 
@@ -448,7 +492,7 @@ walls choose_best_cell()
 
 
         if (mask & ~(maze[curr_position.x][curr_position.y].cell_walls)){       // If there is no wall at given direction
-            
+
             coord n;                                                            // Variable to hold proposed next cell
 
             if (!get_neighbor_coordinate(curr_position.x, curr_position.y, (walls)mask, n)) continue;   // If neighbor coordinate does not exist, skip
@@ -482,7 +526,7 @@ walls choose_best_cell()
 
         curr_position.x = bvX;                                                  // Set the current position to the best visited cell x-coord
         curr_position.y = bvY;                                                  // Set the current position to the best visited cell y-coord
-       
+
         maze[curr_position.x][curr_position.y].cell_walls |= (walls) opp_wall_lookup[(int) vdir];
                         // Close off the dead end by putting a virtual wall
 
