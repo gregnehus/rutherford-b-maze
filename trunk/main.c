@@ -160,10 +160,10 @@ void display_map(){
 void draw_cell(int x, int y){
     coord origin;
     get_cell_pixel_origin(x, y, origin);
-    if (maze[x][y].cell_walls & west) draw_cell_wall(x,y,west);
-    if (maze[x][y].cell_walls & north) draw_cell_wall(x,y,north);
-    if (maze[x][y].cell_walls & east) draw_cell_wall(x,y,east);
-    if (maze[x][y].cell_walls & south) draw_cell_wall(x,y,south);
+    if (maze[x][y].cell_walls & west) draw_cell_wall(origin.x,origin.y,west);
+    if (maze[x][y].cell_walls & north) draw_cell_wall(origin.x,origin.y,north);
+    if (maze[x][y].cell_walls & east) draw_cell_wall(origin.x,origin.y,east);
+    if (maze[x][y].cell_walls & south) draw_cell_wall(origin.x,origin.y,south);
 
 
 }
