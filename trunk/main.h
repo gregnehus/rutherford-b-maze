@@ -46,8 +46,8 @@ position curr_position;
 
 
 void halt();
-void set_turret_angle(directions d_angle);
-void set_base_angle(directions d_angle);
+void set_turret_angle(directions angle);
+void set_base_angle(directions angle);
 void turn_base(int angle, int direction);
 void turn_turret(int angle, int direction);
 void dash(int duration);

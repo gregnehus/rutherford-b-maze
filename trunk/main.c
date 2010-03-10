@@ -28,7 +28,7 @@
 /**********************************************************************************
 * Global Variables
 *********************************************************************************/
-walls direction_of_travel; //This keeps track of the direction that the bot is travelling
+walls direction_of_travel;                      //This keeps track of the direction that the bot is travelling
 
 
 directions turret_angle = dSouth;               // Variable to hold the direction that turret is facing, set to south so that it is forced
@@ -123,16 +123,16 @@ void halt()
 
 void set_base_angle(directions angle){
 
-
+    directions r_angle;
     if (angle == base_angle) return;                        // If the angle that is requested is the current angle, quit
 
-    angle = (directions) ((int)angle - (int)base_angle);    // Adjust the angle relative to where the base is currently aimed
+    r_angle = (directions) ((int)angle - (int)base_angle);    // Adjust the angle relative to where the base is currently aimed
 
 
 
-    turn_base(abs(angle), angle/(abs(angle)));              // Turn the base
+    turn_base(abs(r_angle), r_angle/(abs(r_angle)));              // Turn the base
 
-    base_angle = (directions) ((int)angle + (int)base_angle);   // Update the angle at which the base is aimed
+    base_angle = angle;   // Update the angle at which the base is aimed
 
 
 
@@ -146,13 +146,15 @@ void set_base_angle(directions angle){
  */
 void set_turret_angle(directions angle){
 
+    directions r_angle;
+
     if (angle == turret_angle) return;                          // If requested angle is already set, just leave
     
-    angle = (directions) ((int)angle - (int)turret_angle);    // Adjust the angle relative to where the turret is currently aimed
+    r_angle = (directions) ((int)angle - (int)turret_angle);    // Adjust the angle relative to where the turret is currently aimed
     
-    turn_turret(abs(angle), angle/(abs(angle)));                // Turn the turret
+    turn_turret(abs(r_angle), r_angle/(abs(r_angle)));                // Turn the turret
 
-    turret_angle = (directions) ((int) angle + (int)turret_angle);  // Update the angle at which the base is aimed
+    turret_angle = angle;  // Update the angle at which the base is aimed
 
 
 }
