@@ -18,6 +18,15 @@
 #define MAZE_GOAL_X 4
 #define MAZE_GOAL_Y 4
 
+// LCD Information
+#define PIXELS_X 100
+#define PIXELS_Y 64
+
+#define CELL_WALL_PIXEL_WIDTH 2
+#define CELL_PIXEL_WIDTH (PIXELS_X - CELL_WALL_PIXEL_WIDTH * (MAZE_WIDTH + 1)) / MAZE_WIDTH
+#define CELL_PIXEL_HEIGHT (PIXELS_Y - CELL_WALL_PIXEL_WIDTH * (MAZE_HEIGHT + 1))/MAZE_HEIGHT
+
+
 // Defines for motor movement
 #define DURATION_TURN_90 410
 #define DURATION_LOOK_90 400
@@ -48,6 +57,8 @@ walls opp_wall_lookup[]=                        // Array gives easy way to get v
 
 cell maze[MAZE_WIDTH][MAZE_HEIGHT];
 
+bool hasBumped = false;                         // Boolean variable to set if a wall has been ran into
+
 
 /********************************************************************************
  * Function: task main()
@@ -56,6 +67,15 @@ cell maze[MAZE_WIDTH][MAZE_HEIGHT];
  * Description: This function contains the main loop of the program
  */
 
+task monitor_bumper(){
+
+
+    if (SensorValue(touchSensor)){
+
+        halt();
+        hasBumped = true;
+    }
+}
 task main()
 {
 
@@ -97,6 +117,70 @@ task main()
 
 }//end main
 
+
+/********************************************************************************
+ * Function: initialize_maze
+ * Parameters: None
+ * Return: None
+ * Description: Automatically sets the border of the maze
+ */
+void initialize_maze(){
+    int x, y;
+    for (x = 0; x< MAZE_WIDTH; x++){
+        for (y = 0; x< MAZE_HEIGHT; y++){
+            walls c = 0;
+            
+            if (x == 0) c |= west;
+            if (x == MAZE_WIDTH - 1) c |= east;
+            if (y == 0) c |= south;
+            if (y == MAZE_HEIGHT -1) c |= north;
+            
+            maze[x][y].cell_walls = c;
+            
+        }
+        
+        
+    }
+    
+    
+}
+
+/********************************************************************************
+ * Function: display_map
+ * Parameters: None
+ * Return: None
+ * Description: Displays the map on the NXTs LCD
+ */
+
+void display_map(){
+    
+    
+
+}
+
+/********************************************************************************
+ * Function: get_cell_pixel_origin
+ * Parameters: Takes a coordinate object to pass back coordinate
+ * Return: None
+ * Description: Determins the pixel origin of a given cell
+ */
+void get_cell_pixel_origin(int x, int y, coord *n){
+    n->x = CELL_PIXEL_WIDTH  * x;
+    n->y = CELL_PIXEL_HEIGHT * y;
+
+}
+
+/********************************************************************************
+ * Function: get_cell_pixel_center
+ * Parameters: Takes a coordinate object to pass back coordinate
+ * Return: None
+ * Description: Determins the pixel center of a given cell
+ */
+void get_cell_pixel_center(int x, int y, coord *n){
+    n->x = CELL_PIXEL_WIDTH  * x;
+    n->y = CELL_PIXEL_HEIGHT * y;
+
+}
 
 /********************************************************************************
  * Function: void halt()
@@ -201,14 +285,33 @@ void turn_base(int angle, int direction)
  * Description: This function makes the robot dash forward
  */
 
-void dash(int duration)
+void dash()
 {
+    int x;
+
+    int splitDuration = DURATION_DASH_CELL / 4;         // Let's split up total duration so we can check bumper
+
     halt();                                             // Stop all motors
     motor[rightMotor] = 50;                             // Set right motor speed
     motor[leftMotor] = 50;                              // Set left motor speed
-    wait1Msec(duration);                                // wait
-    halt();                                             // Stop all motors
 
+    StartTask(monitor_bumper);                          // Begin process which monitors bumper status
+
+
+    for (x = 0; x< 4; x++)
+        wait1Msec(splitDuration);                                // wait
+    halt();                                           // Stop all motors
+
+    StopTask(monitor_bumper);                           // Kill the monitoring task
+
+    if (hasBumped){                                          // If a bump occurred
+        motor[rightMotor] = -50;                             // Back the truck up
+        motor[leftMotor] = -50;
+
+        wait1Msec(splitDuration);                               // Just long enough to center
+        halt();                                                 // Stop motors
+        hasBumped = false;                                      // Reset hasBumped;
+    }
 }
 
 
