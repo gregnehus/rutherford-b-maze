@@ -65,4 +65,4 @@ void get_cell_pixel_origin(int x, int y, coord *n);
 void get_cell_pixel_center(int x, int y, coord *n);
 void initialize_maze();
 task we_are_the_champions();
-// UNUSED: int get_sonar();
+void navigate_to_cell(int dest_x, int dest_y);
