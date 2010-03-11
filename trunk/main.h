@@ -1,12 +1,16 @@
+/**********************************************************************************
+* File:         main.h
+* Authors:      Greg Nehus, Matt Odille
+*********************************************************************************/
 
 /**********************************************************************************
 * Typedefs
 *********************************************************************************/
 typedef enum{
-  west = 1,   // 0001
-  north = 2,  // 0010
-  east = 4,   // 0100
-  south = 8   // 1000
+	  west = 1,   // 0001
+	  north = 2,  // 0010
+	  east = 4,   // 0100
+	  south = 8   // 1000
 } walls;
 
 typedef enum{
@@ -14,22 +18,22 @@ typedef enum{
     dNorth = 90,
     dEast = 180,
     dSouth = 270
-}directions;
+} directions;
 
 typedef struct{
-  int x;
-  int y;
-}coord;
+	  int x;
+	  int y;
+} coord;
 
 typedef struct{
-  walls cell_walls;
-  bool visited;
+	  walls cell_walls;
+	  bool visited;
 } cell;
 
 typedef struct{
-  int x;
-  int y;
-  int angle;
+	  int x;
+	  int y;
+	  int angle;
 } position;
 
 
@@ -48,7 +52,6 @@ void set_base_angle(directions angle);
 void turn_base(int angle, int direction);
 void turn_turret(int angle, int direction);
 void dash();
-int get_sonar();
 void scan_cell();
 void scan_wall(walls w);
 void align_turret();
@@ -61,3 +64,5 @@ void draw_cell_wall(int x, int y, walls dir);
 void get_cell_pixel_origin(int x, int y, coord *n);
 void get_cell_pixel_center(int x, int y, coord *n);
 void initialize_maze();
+task we_are_the_champions();
+// UNUSED: int get_sonar();
