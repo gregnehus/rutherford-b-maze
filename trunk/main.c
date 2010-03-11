@@ -68,7 +68,7 @@ walls wall_lookup[] =                           // Array serves as way to have a
 
 walls wall_lookup_west[] =                           // Array serves as way to have access to all enumerated wall types
     {0, south, west, 0, north, 0, 0, 0, east};
-	
+
 walls wall_lookup_north[] =                           // Array serves as way to have access to all enumerated wall types
     {0, west, north, 0, east, 0, 0, 0, south};
 
@@ -76,9 +76,9 @@ walls wall_lookup_east[] =                           // Array serves as way to h
     {0, north, east, 0, south, 0, 0, 0, west};
 
 walls wall_lookup_south[] =                           // Array serves as way to have access to all enumerated wall types
-    {0, east, south, 0, west, 0, 0, 0, north};	
+    {0, east, south, 0, west, 0, 0, 0, north};
 
-	
+
 walls opp_wall_lookup[]=                        // Array gives easy way to get value of opposing wall direction
       {0,east, south, 0,west, 0, 0, 0, north};
 
@@ -109,7 +109,26 @@ task main()
     display_map();
     nVolume = 4;
 
-    // This loops until the bot solves the maze
+
+
+    // This loops through travelling back and forth between start and destination coordinates
+    while(true){
+			navigate_to_cell(MAZE_GOAL_X, MAZE_GOAL_Y);
+			navigate_to_cell(MAZE_ORIGIN_X, MAZE_ORIGIN_Y);
+      break;
+    }
+}//end main
+
+
+/********************************************************************************
+ * Function: navigate_to_cell
+ * Parameters: X,Y coordinates of destination
+ * Return: None
+ * Description: Has the robot navigate to a given location, given coordinates
+ */
+void navigate_to_cell(int dest_x, int dest_y){
+
+	// This loops until the bot solves the maze
     while(true){
 	      maze[curr_position.x][curr_position.y].visited = true;                // Mark current cell as visited
 	      scan_cell();                                                          // Scan for walls in the current cell
@@ -118,27 +137,23 @@ task main()
 
 	      set_base_angle(dir_lookup[direction_of_travel]);                      // Turn base to proper direction
 	      dash();                                                               // Dash into neighbor cell
-	     
+
 
 	      //nxtDisplayCenteredTextLine(2, "Coord: %d,%d", curr_position.x, curr_position.y);
 
-	      if(curr_position.x == MAZE_GOAL_X && curr_position.y == MAZE_GOAL_Y){ // Check for destination
+	      if(curr_position.x == dest_x && curr_position.y == dest_y){ // Check for destination
 	          //PlaySound(soundUpwardTones);
 	          //wait1Msec(250);
     	      StartTask(we_are_the_champions);
-	          while(true){
-	          }
+
+			  break;
+
+
 	      }
     }//end while
 
-    // This loops through travelling back and forth between start and destination coordinates
-    while(true){
-      // TODO: work on me
-      // Travel back to start
-      // Travel to goal
-      break;
-    }
-}//end main
+
+}
 
 
 /********************************************************************************
@@ -415,13 +430,13 @@ void scan_cell()
 {
     int x;
     for (x = 1; x < 9; x = x * 2){                  // This for loop will iterate through wall_lookup array (1, 2, 4, 8)
-        scan_wall(wall_lookup[x]);                  // which has all of the wall types in it
+
 			if (base_angle == dNorth) scan_wall(wall_lookup_north[x], wall_lookup[x]);
 			if (base_angle == dEast) scan_wall(wall_lookup_east[x], wall_lookup[x]);
 			if (base_angle == dSouth) scan_wall(wall_lookup_south[x], wall_lookup[x]);
 			if (base_angle == dWest) scan_wall(wall_lookup_west[x], wall_lookup[x]);
 		}
-		
+
 }
 
 /********************************************************************************
