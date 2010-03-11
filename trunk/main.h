@@ -59,3 +59,5 @@ void display_map();
 void draw_cell(int x, int y);
 void draw_cell_wall(int x, int y, walls dir);
 void get_cell_pixel_origin(int x, int y, coord *n);
+void get_cell_pixel_center(int x, int y, coord *n);
+void initialize_maze();
