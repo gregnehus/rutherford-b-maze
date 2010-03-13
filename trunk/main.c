@@ -27,8 +27,8 @@
 #define MAZE_WIDTH 6
 #define MAZE_ORIGIN_X 1
 #define MAZE_ORIGIN_Y 0
-#define MAZE_GOAL_X 4
-#define MAZE_GOAL_Y 4
+#define sMAZE_GOAL_X 4
+#define sMAZE_GOAL_Y 4
 #define WALL_DISTANCE_THRESHOLD 60
 #define MAZE_CELL_TO_CELL 80
 
@@ -41,6 +41,7 @@
 
 // Robot Information
 #define WHEEL_DIAMETER 5.5
+#define DISTANCE_FROM_SONAR_TO_CENTER 10
 
 
 // Defines for motor movement timing
@@ -86,6 +87,11 @@ cell maze[MAZE_WIDTH][MAZE_HEIGHT];             // Matrix of cells representing 
 
 bool hasBumped = false;                         // Boolean variable to set if a wall has been ran into
 
+int MAZE_GOAL_X;
+int MAZE_GOAL_Y;
+bool useVisited = false;
+bool justWon;
+
 /**********************************************************************************
 * Main task
 *********************************************************************************/
@@ -103,7 +109,10 @@ task main()
     align_turret();
     halt();
 
-    // Initialize the borders of the maze and draw the map on the LCD screen
+
+
+
+	  // Initialize the borders of the maze and draw the map on the LCD screen
     eraseDisplay();
     initialize_maze();
     display_map();
@@ -111,9 +120,11 @@ task main()
 
 
 
+
     // This loops through travelling back and forth between start and destination coordinates
     while(true){
-			navigate_to_cell(MAZE_GOAL_X, MAZE_GOAL_Y);
+			navigate_to_cell(sMAZE_GOAL_X, sMAZE_GOAL_Y);
+			useVisited = true;
 			navigate_to_cell(MAZE_ORIGIN_X, MAZE_ORIGIN_Y);
       break;
     }
@@ -127,16 +138,26 @@ task main()
  * Description: Has the robot navigate to a given location, given coordinates
  */
 void navigate_to_cell(int dest_x, int dest_y){
-
+    MAZE_GOAL_X = dest_x;
+    MAZE_GOAL_Y = dest_y;
 	// This loops until the bot solves the maze
     while(true){
-	      maze[curr_position.x][curr_position.y].visited = true;                // Mark current cell as visited
+
+
 	      scan_cell();                                                          // Scan for walls in the current cell
+	      maze[curr_position.x][curr_position.y].visited = true;                // Mark current cell as visited
 	      draw_cell(curr_position.x,curr_position.y);                           // Draw the cell on the LCD
 	      direction_of_travel = choose_best_cell();                             // Choose which direction to travel
 
 	      set_base_angle(dir_lookup[direction_of_travel]);                      // Turn base to proper direction
+
 	      dash();                                                               // Dash into neighbor cell
+
+
+	      set_turret_angle(dNorth);
+
+	      adjust(SensorValue(sonarCensor) - (MAZE_CELL_TO_CELL / 2 - DISTANCE_FROM_SONAR_TO_CENTER));
+
 
 
 	      //nxtDisplayCenteredTextLine(2, "Coord: %d,%d", curr_position.x, curr_position.y);
@@ -145,7 +166,8 @@ void navigate_to_cell(int dest_x, int dest_y){
 	          //PlaySound(soundUpwardTones);
 	          //wait1Msec(250);
     	      StartTask(we_are_the_champions);
-
+            //set_base_angle(dir_lookup[opp_wall_lookup[direction_of_travel]]);
+            justWon = true;
 			  break;
 
 
@@ -286,6 +308,8 @@ void set_base_angle(directions angle){
     if (angle == base_angle) return;                        // If the angle that is requested is the current angle, quit
 
     r_angle = (directions) ((int)angle - (int)base_angle);    // Adjust the angle relative to where the base is currently aimed
+    if (r_angle == -270) r_angle = 90;
+    if (r_angle == 270) r_angle = -90;
     turn_base(abs(r_angle), r_angle/(abs(r_angle)));              // Turn the base
     base_angle = angle;   // Update the angle at which the base is aimed
 }
@@ -302,7 +326,7 @@ void set_turret_angle(directions angle){
     if (angle == turret_angle) return;                          // If requested angle is already set, just leave
 
     r_angle = (directions) ((int)angle - (int)turret_angle);    // Adjust the angle relative to where the turret is currently aimed
-    turn_turret(abs(r_angle), r_angle/(abs(r_angle)));          // Turn the turret
+    turn_turret(abs(r_angle), r_angle/(abs(r_angle)), angle);          // Turn the turret
     turret_angle = angle;  // Update the angle at which the base is aimed
 }
 
@@ -312,13 +336,13 @@ void set_turret_angle(directions angle){
  * Return: None
  * Description: This function turns the turret to a particular direction
  */
-void turn_turret(int angle, int direction)
+void turn_turret(int angle, int direction, directions iAngle)
 {
     int fineTune = 0;                                       // Variable used to push motor a little further when that angle has physical stoppers
 
     halt();                                                 // Stop all motors
 
-    if (angle == 0 || angle == 270) fineTune = 100;         // There are stoppers at 0 & 270, so lets go a little further for both of these angles
+    if (iAngle == dWest || iAngle == dSouth) fineTune = 100;         // There are stoppers at 0 & 270, so lets go a little further for both of these angles
     motor[turretMotor] = 25 * direction;                    // Set turret motor speed
     wait1Msec(DURATION_LOOK_90 * (angle / 90) + fineTune);  // Timer delay
 
@@ -384,6 +408,26 @@ void dash()
     }
 }
 
+
+void adjust(float distance){
+
+
+    halt();                                               // Stop all motors
+
+    if (abs(distance) == 0 || abs(distance) > MAZE_CELL_TO_CELL / 2) return;
+    nMotorEncoder[rightMotor] = 0;                        // Reset motor encoder value
+		motor[rightMotor] = 35 * (distance / abs(distance));                   // Set motor speeds
+		motor[leftMotor] = 35* (distance / abs(distance));
+
+		// Loop until the motor encoder value indicates that the robot has travelled distance of MAZE_CELL_TO_CELL
+		int shouldTravel = distance / (PI * WHEEL_DIAMETER) * 360;
+    while(true){
+      if (distance < 0 && nMotorEncoder[rightMotor] < shouldTravel ) break;
+      if (distance > 0 && nMotorEncoder[rightMotor] > shouldTravel) break;
+    };
+
+    halt();                                 // Stop all motors
+}
 /********************************************************************************
  * Function: align_turret
  * Parameters: None
@@ -429,6 +473,7 @@ void scan_wall(walls w, walls c)
 void scan_cell()
 {
     int x;
+    if (maze[curr_position.x][curr_position.y].visited == true) return;
     for (x = 1; x < 9; x = x * 2){                  // This for loop will iterate through wall_lookup array (1, 2, 4, 8)
 
 			if (base_angle == dNorth) scan_wall(wall_lookup_north[x], wall_lookup[x]);
@@ -468,26 +513,35 @@ walls choose_best_cell()
             coord n;                                                            // Variable to hold proposed next cell
 
             if (!get_neighbor_coordinate(curr_position.x, curr_position.y, (walls)mask, n)) continue;   // If neighbor coordinate does not exist, skip
+            if (!useVisited){
+	            // If proposed next cell is the closest proposed unvisted cell yet, remember it
+	            if (get_distance(n.x, n.y, MAZE_GOAL_X, MAZE_GOAL_Y) < shortestUnvisitedDistance && !maze[n.x][n.y].visited){
+	                shortestUnvisitedDistance = get_distance(n.x, n.y, MAZE_GOAL_X, MAZE_GOAL_Y);   // Save cartesian distance
+	                bX = n.x;                                                                               // Save best unvisted x-coord
+	                bY = n.y;                                                                               // Save best unvisted y-coord
+	                dir = (walls)mask;                                                                      // Save relative unvistited next cell direction
 
-            // If proposed next cell is the closest proposed unvisted cell yet, remember it
-            if (get_distance(n.x, n.y, MAZE_GOAL_X, MAZE_GOAL_Y) < shortestUnvisitedDistance && !maze[n.x][n.y].visited){
-                shortestUnvisitedDistance = get_distance(n.x, n.y, MAZE_GOAL_X, MAZE_GOAL_Y);   // Save cartesian distance
-                bX = n.x;                                                                               // Save best unvisted x-coord
-                bY = n.y;                                                                               // Save best unvisted y-coord
-                dir = (walls)mask;                                                                      // Save relative unvistited next cell direction
-
-            // Else, if the proposed next cell is the closest cell that has already been visited, remember it
-            }else if (get_distance(n.x, n.y, MAZE_GOAL_X, MAZE_GOAL_Y) < shortestVisitedDistance && maze[n.x][n.y].visited){
+	            // Else, if the proposed next cell is the closest cell that has already been visited, remember it
+	            }else if (get_distance(n.x, n.y, MAZE_GOAL_X, MAZE_GOAL_Y) < shortestVisitedDistance && maze[n.x][n.y].visited){
+	                shortestVisitedDistance = get_distance(n.x, n.y, MAZE_GOAL_X, MAZE_GOAL_Y);      // Save teh cartesian distance
+	                bvX = n.x;                                                                               // Save the best visited x-coord
+	                bvY = n.y;                                                                               // Save teh best visited y-coord
+	                vdir = (walls)mask;                                                                      // Save relative visited next cell direction
+              }
+          }else{
+              if (get_distance(n.x, n.y, MAZE_GOAL_X, MAZE_GOAL_Y) < shortestVisitedDistance && maze[n.x][n.y].visited && (opp_wall_lookup[(int)direction_of_travel] != (walls)mask ^ justWon)){
                 shortestVisitedDistance = get_distance(n.x, n.y, MAZE_GOAL_X, MAZE_GOAL_Y);      // Save teh cartesian distance
                 bvX = n.x;                                                                               // Save the best visited x-coord
                 bvY = n.y;                                                                               // Save teh best visited y-coord
-                vdir = (walls)mask;                                                                      // Save relative visited next cell direction
+                vdir = (walls)mask;
+                justWon = false;
             }
+          }
         }
         mask = mask << 1;                                                                                 // Shift mask to left
     }
 
-    if (shortestUnvisitedDistance == 65535){                                    // If there is no new cell that has not been visited
+    if (shortestUnvisitedDistance == 65535 || useVisited){                                    // If there is no new cell that has not been visited
         PlaySound(soundBlip);                                                   // Sound playing (for debug purposes)
         wait1Msec(250);
         PlaySound(soundBlip);
@@ -495,7 +549,7 @@ walls choose_best_cell()
         curr_position.x = bvX;                                                  // Set the current position to the best visited cell x-coord
         curr_position.y = bvY;                                                  // Set the current position to the best visited cell y-coord
 
-        maze[curr_position.x][curr_position.y].cell_walls |= (walls) opp_wall_lookup[(int) vdir];
+        if (!useVisited) maze[curr_position.x][curr_position.y].cell_walls |= (walls) opp_wall_lookup[(int) vdir];
                         // Close off the dead end by putting a virtual wall
 
         return vdir;                                                            // Return the visited direction
