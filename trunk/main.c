@@ -23,14 +23,14 @@
 * Preprocessor Definitions
 *********************************************************************************/
 // Maze information
-#define MAZE_HEIGHT 5
-#define MAZE_WIDTH 6
-#define MAZE_ORIGIN_X 1
+#define MAZE_HEIGHT 10
+#define MAZE_WIDTH 12
+#define MAZE_ORIGIN_X 3
 #define MAZE_ORIGIN_Y 0
 #define sMAZE_GOAL_X 4
 #define sMAZE_GOAL_Y 4
-#define WALL_DISTANCE_THRESHOLD 60
-#define MAZE_CELL_TO_CELL 80
+#define MAZE_CELL_TO_CELL 40
+#define WALL_DISTANCE_THRESHOLD MAZE_CELL_TO_CELL/2
 
 // LCD Information
 #define PIXELS_X 100
@@ -41,13 +41,14 @@
 
 // Robot Information
 #define WHEEL_DIAMETER 5.5
-#define DISTANCE_FROM_SONAR_TO_CENTER 10
+#define DISTANCE_FROM_SONAR_TO_CENTER 5
 
 
 // Defines for motor movement timing
 #define DURATION_TURN_90 684
 #define DURATION_LOOK_90 400
 #define DURATION_DASH_CELL 3500
+
 
 #include "main.h"
 
@@ -97,6 +98,7 @@ bool justWon;
 *********************************************************************************/
 task main()
 {
+
 	  // Setup the motor configuration
 	  bFloatDuringInactiveMotorPWM = false;
 	  nMotorEncoder[rightMotor] = 0;
@@ -153,10 +155,9 @@ void navigate_to_cell(int dest_x, int dest_y){
 
 	      dash();                                                               // Dash into neighbor cell
 
+        set_turret_angle(dNorth);
+        adjust(SensorValue(sonarCensor) - (MAZE_CELL_TO_CELL / 2 - DISTANCE_FROM_SONAR_TO_CENTER));
 
-	      set_turret_angle(dNorth);
-
-	      adjust(SensorValue(sonarCensor) - (MAZE_CELL_TO_CELL / 2 - DISTANCE_FROM_SONAR_TO_CENTER));
 
 
 
@@ -394,6 +395,48 @@ void dash()
 
     halt();                                 // Stop all motors
 
+    int hasTravelled = abs(nMotorEncoder[rightMotor]);
+    if (hasBumped){                         // If a bump occurred...
+        nMotorEncoder[rightMotor] = 0;
+        motor[rightMotor] = -25;            // Set the motors to reverse
+        motor[leftMotor] = -25;
+        coord n;
+        // Loop until the motor encoder value indicates that the robot has travelled 1/2 the distance of MAZE_CELL_TO_CELL
+        while(abs(nMotorEncoder[rightMotor]) < hasTravelled);
+        get_neighbor_coordinate(curr_position.x, curr_position.y, opp_wall_lookup[direction_of_travel], n);
+        curr_position.x = n.x;
+        curr_position.y = n.y;
+        maze[curr_position.x][curr_position.y].cell_walls |= direction_of_travel;
+
+        halt();                             // Stop all motors
+        hasBumped = false;                  // Reset hasBumped flag
+    }
+}
+
+void dash_wallfollow()
+{
+    int sonarValue;
+    halt();                                   // Stop all motors
+
+    nMotorEncoder[rightMotor] = 0;            // Reset motor encoder value
+		motor[rightMotor] = 60;                   // Set motor speeds
+		motor[leftMotor] = 60;
+
+		// Loop until the motor encoder value indicates that the robot has travelled distance of MAZE_CELL_TO_CELL
+    while(nMotorEncoder[rightMotor] < MAZE_CELL_TO_CELL / (PI * WHEEL_DIAMETER) * 360)
+    {
+        sonarValue = SensorValue[sonarCensor];
+        motor[rightMotor] = 60;
+        motor[leftMotor] = 60;
+				if (SensorValue[touchSensor] == 1){ // Monitor the bumper sensor while the bot is moving
+						halt();                         // If bumper sensor is engaged, stop all motors
+						hasBumped = true;               // Set the hasBumped flag
+						break;                          // Exit the while loop
+				}
+    }
+
+    halt();                                 // Stop all motors
+
     if (hasBumped){                         // If a bump occurred...
         nMotorEncoder[rightMotor] = 0;
         motor[rightMotor] = -50;            // Set the motors to reverse
@@ -416,8 +459,8 @@ void adjust(float distance){
 
     if (abs(distance) == 0 || abs(distance) > MAZE_CELL_TO_CELL / 2) return;
     nMotorEncoder[rightMotor] = 0;                        // Reset motor encoder value
-		motor[rightMotor] = 35 * (distance / abs(distance));                   // Set motor speeds
-		motor[leftMotor] = 35* (distance / abs(distance));
+		motor[rightMotor] = 10 * (distance / abs(distance));                   // Set motor speeds
+		motor[leftMotor] = 10* (distance / abs(distance));
 
 		// Loop until the motor encoder value indicates that the robot has travelled distance of MAZE_CELL_TO_CELL
 		int shouldTravel = distance / (PI * WHEEL_DIAMETER) * 360;
