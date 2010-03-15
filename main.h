@@ -67,3 +67,4 @@ void initialize_maze();
 task we_are_the_champions();
 void navigate_to_cell(int dest_x, int dest_y);
 void adjust(float distance);
+void dash_wallfollow();
