@@ -9,28 +9,35 @@
 * File:         main.c
 * Authors:      Greg Nehus, Matt Odille
 * Description:  This program is written in ROBOTC for the Lego Mindstorms NXT
-                platform.  It's an autonomous maze-solving robot that works in a
-                grid-style maze with all 90-degree turns.  Given only the start and
-                destination coordinates as (X,Y) values, the robot will find a path
-                to the destination cell, then travel back and forth between the
-                destination and starting point indefinitely.  The robot should be
-                facing "north" originally and modifications may be required to
-                certain macros based on the size of cells and the build of the robot.
+*               platform.  It's an autonomous maze-solving robot that works in a
+*               grid-style maze with any degree turns.  Given only the start and
+*               destination coordinates as (X,Y) values, the robot will find a path
+*               to the destination cell, then travel back and forth between the
+*               destination and starting point indefinitely.  The robot should be
+*               facing "north" originally and modifications may be required to
+*               certain macros based on the size of cells and the build of the robot.
 * Last modified: Mar 11, 2010
 *********************************************************************************/
 
 /**********************************************************************************
 * Preprocessor Definitions
 *********************************************************************************/
-// Maze information
-#define MAZE_HEIGHT 10
-#define MAZE_WIDTH 12
-#define MAZE_ORIGIN_X 3
+// Maze information (units=cells)
+#define MAZE_CELL_TO_CELL 32
+#define ROOM_X_CM  675
+#define ROOM_Y_CM  620
+#define MAZE_X_CM   480
+#define MAZE_Y_CM   400
+#define MAZE_HEIGHT MAZE_Y_CM/MAZE_CELL_TO_CELL
+#define MAZE_WIDTH MAZE_X_CM/MAZE_CELL_TO_CELL
+#define MAZE_ORIGIN_X 0
 #define MAZE_ORIGIN_Y 0
-#define sMAZE_GOAL_X 11
-#define sMAZE_GOAL_Y 9
-#define MAZE_CELL_TO_CELL 40
+
 #define WALL_DISTANCE_THRESHOLD MAZE_CELL_TO_CELL
+
+// Maze information (units=centimeters)
+#define dMAZE_GOAL_X 440
+#define dMAZE_GOAL_Y 320
 
 // LCD Information
 #define PIXELS_X 100
@@ -42,7 +49,6 @@
 // Robot Information
 #define WHEEL_DIAMETER 5.5
 #define DISTANCE_FROM_SONAR_TO_CENTER 2
-
 
 // Defines for motor movement timing
 #define DURATION_TURN_90 695
@@ -90,8 +96,15 @@ bool hasBumped = false;                         // Boolean variable to set if a 
 
 int MAZE_GOAL_X;
 int MAZE_GOAL_Y;
+
 bool useVisited = false;
 bool justWon;
+bool hasWon;
+
+// convert end goal coords in CM to coords in cells
+int sMAZE_GOAL_X = (int)( dMAZE_GOAL_X / MAZE_CELL_TO_CELL );
+int sMAZE_GOAL_Y = (int)( dMAZE_GOAL_Y / MAZE_CELL_TO_CELL );
+
 
 /**********************************************************************************
 * Main task
@@ -128,7 +141,7 @@ task main()
 			navigate_to_cell(sMAZE_GOAL_X, sMAZE_GOAL_Y);
 			useVisited = true;
 			navigate_to_cell(MAZE_ORIGIN_X, MAZE_ORIGIN_Y);
-      break;
+      //break;
     }
 }//end main
 
@@ -144,7 +157,6 @@ void navigate_to_cell(int dest_x, int dest_y){
     MAZE_GOAL_Y = dest_y;
 	// This loops until the bot solves the maze
     while(true){
-
 
 	      scan_cell();                                                          // Scan for walls in the current cell
 	      maze[curr_position.x][curr_position.y].visited = true;                // Mark current cell as visited
@@ -163,10 +175,11 @@ void navigate_to_cell(int dest_x, int dest_y){
 
 	      //nxtDisplayCenteredTextLine(2, "Coord: %d,%d", curr_position.x, curr_position.y);
 
-	      if(curr_position.x == dest_x && curr_position.y == dest_y){ // Check for destination
+	      if(curr_position.x == dest_x && curr_position.y == dest_y || hasWon){ // Check for destination
 	          //PlaySound(soundUpwardTones);
 	          //wait1Msec(250);
     	      StartTask(we_are_the_champions);
+    	      hasWon = false;
             //set_base_angle(dir_lookup[opp_wall_lookup[direction_of_travel]]);
             justWon = true;
 			  break;
@@ -406,6 +419,7 @@ void dash()
         // Loop until the motor encoder value indicates that the robot has travelled 1/2 the distance of MAZE_CELL_TO_CELL
         while(abs(nMotorEncoder[rightMotor]) < hasTravelled);
         get_neighbor_coordinate(curr_position.x, curr_position.y, opp_wall_lookup[direction_of_travel], n);
+        if (curr_position.x == sMAZE_GOAL_X && curr_position.y == sMAZE_GOAL_Y) hasWon = true;
         curr_position.x = n.x;
         curr_position.y = n.y;
         maze[curr_position.x][curr_position.y].cell_walls |= direction_of_travel;
@@ -586,7 +600,7 @@ walls choose_best_cell()
         mask = mask << 1;                                                                                 // Shift mask to left
     }
 
-    if (shortestUnvisitedDistance == 65535 || shortestVisitedDistance < shortestUnvisitedDistance || useVisited){                                    // If there is no new cell that has not been visited
+    if (shortestUnvisitedDistance == 65535 || useVisited){                                    // If there is no new cell that has not been visited
         PlaySound(soundBlip);                                                   // Sound playing (for debug purposes)
         wait1Msec(250);
         PlaySound(soundBlip);
