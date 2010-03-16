@@ -27,10 +27,10 @@
 #define MAZE_WIDTH 12
 #define MAZE_ORIGIN_X 3
 #define MAZE_ORIGIN_Y 0
-#define sMAZE_GOAL_X 4
-#define sMAZE_GOAL_Y 4
+#define sMAZE_GOAL_X 11
+#define sMAZE_GOAL_Y 9
 #define MAZE_CELL_TO_CELL 40
-#define WALL_DISTANCE_THRESHOLD MAZE_CELL_TO_CELL/2
+#define WALL_DISTANCE_THRESHOLD MAZE_CELL_TO_CELL
 
 // LCD Information
 #define PIXELS_X 100
@@ -41,11 +41,11 @@
 
 // Robot Information
 #define WHEEL_DIAMETER 5.5
-#define DISTANCE_FROM_SONAR_TO_CENTER 5
+#define DISTANCE_FROM_SONAR_TO_CENTER 2
 
 
 // Defines for motor movement timing
-#define DURATION_TURN_90 684
+#define DURATION_TURN_90 695
 #define DURATION_LOOK_90 400
 #define DURATION_DASH_CELL 3500
 
@@ -227,6 +227,8 @@ void draw_cell(int x, int y){
     if (maze[x][y].cell_walls & north) draw_cell_wall(origin.x,origin.y,north);
     if (maze[x][y].cell_walls & east) draw_cell_wall(origin.x,origin.y,east);
     if (maze[x][y].cell_walls & south) draw_cell_wall(origin.x,origin.y,south);
+    //nxtDisplayStringAt(70,20, "%d,%d", curr_position.x, curr_position.y);
+    //wait10Msec(1000);
     get_cell_pixel_center(x,y,origin);
     if (maze[x][y].visited) nxtSetPixel(origin.x, origin.y);
 }
@@ -457,7 +459,7 @@ void adjust(float distance){
 
     halt();                                               // Stop all motors
 
-    if (abs(distance) == 0 || abs(distance) > MAZE_CELL_TO_CELL / 2) return;
+    if (abs(distance) == 0 || abs(distance) > MAZE_CELL_TO_CELL / 4) return;
     nMotorEncoder[rightMotor] = 0;                        // Reset motor encoder value
 		motor[rightMotor] = 10 * (distance / abs(distance));                   // Set motor speeds
 		motor[leftMotor] = 10* (distance / abs(distance));
@@ -584,7 +586,7 @@ walls choose_best_cell()
         mask = mask << 1;                                                                                 // Shift mask to left
     }
 
-    if (shortestUnvisitedDistance == 65535 || useVisited){                                    // If there is no new cell that has not been visited
+    if (shortestUnvisitedDistance == 65535 || shortestVisitedDistance < shortestUnvisitedDistance || useVisited){                                    // If there is no new cell that has not been visited
         PlaySound(soundBlip);                                                   // Sound playing (for debug purposes)
         wait1Msec(250);
         PlaySound(soundBlip);
@@ -655,6 +657,7 @@ task we_are_the_champions()
   //
   PlayTone( 1047,  108); wait1Msec(1200);  // Note(F, Duration(Half))
   PlayTone(  988,   27); wait1Msec( 300);  // Note(E, Duration(Eighth))
+  StopTask(we_are_the_champions);
   PlayTone( 1047,   27); wait1Msec( 300);  // Note(F, Duration(Eighth))
   PlayTone(  988,   54); wait1Msec( 600);  // Note(E)
   PlayTone(  784,   54); wait1Msec( 600);  // Note(C)
