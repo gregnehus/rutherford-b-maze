@@ -23,35 +23,36 @@
 * Preprocessor Definitions
 *********************************************************************************/
 // Maze information (units=cells)
-#define MAZE_CELL_TO_CELL 32
+#define MAZE_CELL_TO_CELL 16
+#define MIN_DIST 32
 #define ROOM_X_CM  675
 #define ROOM_Y_CM  620
 #define MAZE_X_CM   480
 #define MAZE_Y_CM   400
 #define MAZE_HEIGHT MAZE_Y_CM/MAZE_CELL_TO_CELL
-#define MAZE_WIDTH MAZE_X_CM/MAZE_CELL_TO_CELL
+#define MAZE_WIDTH  MAZE_X_CM/MAZE_CELL_TO_CELL
 #define MAZE_ORIGIN_X 0
 #define MAZE_ORIGIN_Y 0
 
 #define WALL_DISTANCE_THRESHOLD MAZE_CELL_TO_CELL
 
 // Maze information (units=centimeters)
-#define dMAZE_GOAL_X 440
-#define dMAZE_GOAL_Y 320
+#define dMAZE_GOAL_X 110
+#define dMAZE_GOAL_Y 100
 
 // LCD Information
 #define PIXELS_X 100
 #define PIXELS_Y 64
-#define CELL_WALL_PIXEL_WIDTH 2
+#define CELL_WALL_PIXEL_WIDTH 1
 #define CELL_PIXEL_WIDTH PIXELS_X  / MAZE_WIDTH
 #define CELL_PIXEL_HEIGHT PIXELS_Y / MAZE_HEIGHT
 
 // Robot Information
 #define WHEEL_DIAMETER 5.5
-#define DISTANCE_FROM_SONAR_TO_CENTER 2
+#define DISTANCE_FROM_SONAR_TO_CENTER 10
 
 // Defines for motor movement timing
-#define DURATION_TURN_90 695
+#define DURATION_TURN_90 720
 #define DURATION_LOOK_90 400
 #define DURATION_DASH_CELL 3500
 
@@ -130,7 +131,8 @@ task main()
 	  // Initialize the borders of the maze and draw the map on the LCD screen
     eraseDisplay();
     initialize_maze();
-    display_map();
+    //display_map();
+    draw_destination(sMAZE_GOAL_X, sMAZE_GOAL_Y);
     nVolume = 4;
 
 
@@ -158,17 +160,21 @@ void navigate_to_cell(int dest_x, int dest_y){
 	// This loops until the bot solves the maze
     while(true){
 
+        nxtSetPixel(curr_position.x * 2 - 1, curr_position.y *2);
 	      scan_cell();                                                          // Scan for walls in the current cell
+
 	      maze[curr_position.x][curr_position.y].visited = true;                // Mark current cell as visited
 	      draw_cell(curr_position.x,curr_position.y);                           // Draw the cell on the LCD
+	      nxtClearPixel(curr_position.x * 2 - 1, curr_position.y *2);
 	      direction_of_travel = choose_best_cell();                             // Choose which direction to travel
 
 	      set_base_angle(dir_lookup[direction_of_travel]);                      // Turn base to proper direction
 
+
 	      dash();                                                               // Dash into neighbor cell
 
         set_turret_angle(dNorth);
-        adjust(SensorValue(sonarCensor) - (MAZE_CELL_TO_CELL / 2 - DISTANCE_FROM_SONAR_TO_CENTER));
+        adjust(SensorValue(sonarCensor) - (MAZE_CELL_TO_CELL / 2 + 8);
 
 
 
@@ -236,14 +242,33 @@ void display_map(){
 void draw_cell(int x, int y){
     coord origin;
     get_cell_pixel_origin(x, y, origin);
-    if (maze[x][y].cell_walls & west) draw_cell_wall(origin.x,origin.y,west);
-    if (maze[x][y].cell_walls & north) draw_cell_wall(origin.x,origin.y,north);
-    if (maze[x][y].cell_walls & east) draw_cell_wall(origin.x,origin.y,east);
-    if (maze[x][y].cell_walls & south) draw_cell_wall(origin.x,origin.y,south);
+    //if (maze[x][y].cell_walls & west) draw_cell_wall(origin.x,origin.y,west);
+    //if (maze[x][y].cell_walls & north) draw_cell_wall(origin.x,origin.y,north);
+    //if (maze[x][y].cell_walls & east) draw_cell_wall(origin.x,origin.y,east);
+    //if (maze[x][y].cell_walls & south) draw_cell_wall(origin.x,origin.y,south);
     //nxtDisplayStringAt(70,20, "%d,%d", curr_position.x, curr_position.y);
     //wait10Msec(1000);
-    get_cell_pixel_center(x,y,origin);
-    if (maze[x][y].visited) nxtSetPixel(origin.x, origin.y);
+    //get_cell_pixel_center(x,y,origin);
+    if (maze[x][y].visited) nxtSetPixel(x*2, y*2);
+}
+
+void draw_destination(int x, int y){
+  int originx = x - 2;
+  int originy = y - 2;
+  x = x  * 2;
+  y = y  * 2;
+
+  int w, z;
+  for (w = x - 2; w <= x + 2; w++){
+    if( w == x-2 || w == x+2 ){
+      for( z=y-2; z<=y+2; z++)
+        nxtSetPixel(w,z);
+    } else {
+      nxtSetPixel(w,y-2);
+      nxtSetPixel(w,y+2);
+    }
+  }
+
 }
 
 /********************************************************************************
@@ -416,13 +441,21 @@ void dash()
         motor[rightMotor] = -25;            // Set the motors to reverse
         motor[leftMotor] = -25;
         coord n;
+
+
+        if (useVisited) hasTravelled = 0;
         // Loop until the motor encoder value indicates that the robot has travelled 1/2 the distance of MAZE_CELL_TO_CELL
         while(abs(nMotorEncoder[rightMotor]) < hasTravelled);
         get_neighbor_coordinate(curr_position.x, curr_position.y, opp_wall_lookup[direction_of_travel], n);
         if (curr_position.x == sMAZE_GOAL_X && curr_position.y == sMAZE_GOAL_Y) hasWon = true;
-        curr_position.x = n.x;
-        curr_position.y = n.y;
-        maze[curr_position.x][curr_position.y].cell_walls |= direction_of_travel;
+
+        if (!useVisited){
+          curr_position.x = n.x;
+          curr_position.y = n.y;
+          maze[curr_position.x][curr_position.y].cell_walls |= direction_of_travel;
+      }else{
+        adjust(SensorValue(sonarCensor) - (MAZE_CELL_TO_CELL / 2 + 8);
+      }
 
         halt();                             // Stop all motors
         hasBumped = false;                  // Reset hasBumped flag
@@ -473,7 +506,7 @@ void adjust(float distance){
 
     halt();                                               // Stop all motors
 
-    if (abs(distance) == 0 || abs(distance) > MAZE_CELL_TO_CELL / 4) return;
+    if (abs(distance) == 0 || abs(distance) > MAZE_CELL_TO_CELL / 1.5 ) return;
     nMotorEncoder[rightMotor] = 0;                        // Reset motor encoder value
 		motor[rightMotor] = 10 * (distance / abs(distance));                   // Set motor speeds
 		motor[leftMotor] = 10* (distance / abs(distance));
@@ -520,6 +553,9 @@ void scan_wall(walls w, walls c)
             // If there is a neighboring cell
             if (get_neighbor_coordinate(curr_position.x, curr_position.y, w, n))
                 maze[n.x][n.y].cell_walls |= (walls) opp_wall_lookup[(int) w];  //Mark the opposing wall as a wall
+
+
+
      }
 }
 
@@ -569,9 +605,13 @@ walls choose_best_cell()
     {
         if (mask & ~(maze[curr_position.x][curr_position.y].cell_walls))        // If there is no wall at given direction
         {
-            coord n;                                                            // Variable to hold proposed next cell
+            coord n,h;                                                            // Variable to hold proposed next cell
+
 
             if (!get_neighbor_coordinate(curr_position.x, curr_position.y, (walls)mask, n)) continue;   // If neighbor coordinate does not exist, skip
+            memcpy(h,n,sizeof(h));
+            // (get_neighbor_coordinate(n.x, n.y, (walls)mask, h) &&  mask & maze[h.x][h.x].cell_walls) continue;
+
             if (!useVisited){
 	            // If proposed next cell is the closest proposed unvisted cell yet, remember it
 	            if (get_distance(n.x, n.y, MAZE_GOAL_X, MAZE_GOAL_Y) < shortestUnvisitedDistance && !maze[n.x][n.y].visited){
